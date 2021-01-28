@@ -60,16 +60,16 @@ python3 plot.py -h
 
 Plot the first three streams in the data using seconds on the xAxis
 ```bash
-python3 plot.py test.mkv -v -s 0,1,2  -p seconds
+python3 plot.py test.mkv -s 0,1,2 -p seconds
 ```
 ![output](docu/plot2.png)
-Plot it using timestamps which are encoded in the metadata
+Plot it using timestamps which are encoded in the metadata using matplotlib (takes significantly longer than pyqt)
 ```bash
-python3 plot.py test.mkv -v -s 0,1,2  -p date --fromTime 2020.06.14_10:00:00.0 --toTime 2020.06.14_14:00:00.0 --matplotlib 
+python3 plot.py test.mkv -s 0,1,2 -p date --fromTime 2020.06.14_10:00:00.0 --toTime 2020.06.14_14:00:00.0 --matplotlib 
 ```
 ![output](docu/plot3.png)
-Plot data with encoded subtiltes (srt/ass) using matplotlib (takes significantly longer than pyqt)
+Plot data with encoded subtiltes (srt/ass)
 ```bash
-python3 plot.py test_sub.mkv -v  -p seconds --matplotlib --toSample 30000
+python3 plot.py test_sub.mkv -p seconds --matplotlib --toSample 30000
 ```
 ![output](docu/plot1.png)
