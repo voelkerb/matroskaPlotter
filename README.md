@@ -24,11 +24,6 @@ First get some infos about the test data
 ffprobe test.mkv
 ```
 
-
-```{r df-drop-ok, class.source="bg-success"}
-mtcars[1:5, "mpg", drop = FALSE]
-```
-
 Show help:
 ```bash
 python3 plot.py -h
