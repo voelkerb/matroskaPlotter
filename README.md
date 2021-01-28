@@ -7,7 +7,7 @@ Install latest ```ffmpeg``` on your system
 
 Required python packages installation:
 ```bash
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 The installation of ```pyav``` module is a little tricky, as we require to build it from source.
 Some of this may require sudo privileges.
