@@ -62,8 +62,8 @@ python3 plot.py -h
 ##   --fromSample FROMSAMPLE
 ##                         Sample number to start from
 ##   --toSample TOSAMPLE   Sample number up to
-##   --fromTime FROMTIME   Time to start from format <year>.<month>.<day>_<hour>:<min><sec>\[<.ms>\]
-##   --toTime TOTIME       Time to plot up to, format <year>.<month>.<day>_<hour>:<min><sec>\[<.ms>\]
+##   --fromTime FROMTIME   Time to start from format <year>.<month>.<day>_<hour>:<min>:<sec>.<ms>
+##   --toTime TOTIME       Time to plot up to, format <year>.<month>.<day>_<hour>:<min>:<sec>.<ms>
 ##   --noSubs              If subs should be plotted
 ##   -v, --verbose         Increase output verbosity
 ```
@@ -72,13 +72,14 @@ Plot the first three streams in the data using seconds on the xAxis
 ```bash
 python3 plot.py test.mkv -v -s 0,1,2  -p seconds
 ```
+![output](docu/plot2.png)
 Plot it using timestamps which are encoded in the metadata
 ```bash
-python3 plot.py test.mkv -v -s 0,1,2  -p date
+python3 plot.py test.mkv -v -s 0,1,2  -p date --fromTime 2020.06.14_10:00:00.0 --toTime 2020.06.14_14:00:00.0 --matplotlib 
 ```
+![output](docu/plot3.png)
 Plot data with encoded subtiltes (srt/ass) using matplotlib (takes significantly longer than pyqt)
 ```bash
 python3 plot.py test_sub.mkv -v  -p seconds --matplotlib --toSample 30000
 ```
-
 ![output](docu/plot1.png)

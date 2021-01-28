@@ -85,7 +85,8 @@ def format_time(time, time_base):
 
 def initMatplot(subFigs):
     axes = []
-    fig, (axes) = plt.subplots(subFigs, 1, figsize=(10, 3), dpi=200, sharex=True, tight_layout=True)
+    # fig, (axes) = plt.subplots(subFigs, 1, figsize=(10, 3), dpi=200, sharex=True)
+    fig, (axes) = plt.subplots(subFigs, 1, figsize=(10, 3), dpi=200, sharex=True, constrained_layout=True)
     fig.subplots_adjust(bottom=0.14, top=0.93, right=0.97, left=0.08, hspace=0.1)
     if subFigs < 2: axes = [axes]
     axes[-1].set_xlabel("Samples")
@@ -234,8 +235,6 @@ def plotWithMatplotlib(dataList, measures, verbose=False, show=True, inOneAxis=F
                 axis = axes[axisIndex]
                 
                 legend, label, unit = getNamesForWhat(what)
-                print(unit)
-                print(lastUnit)
                 # Power can be plotted in same plot
                 if unit is not None and lastUnit == unit: 
                     newAxis = True
@@ -245,9 +244,7 @@ def plotWithMatplotlib(dataList, measures, verbose=False, show=True, inOneAxis=F
                     newAxis = False  
                 lastUnit = unit
                 t = None
-
                 lastMeasure = what
-
                 samples = len(data)
                 startTs = 0
                 convertToDate = False
@@ -347,7 +344,7 @@ def plotWithMatplotlib(dataList, measures, verbose=False, show=True, inOneAxis=F
         axes[-1].set_xlabel("Samples")
     else:
         axes[-1].set_xlabel(plotType)
-    plt.tight_layout()
+    # fig.tight_layout()
     if show:
         plt.show()
     return fig, axes
@@ -553,9 +550,9 @@ def initParser():
     parser.add_argument("--toSample", type=str, default=None,
                         help="Sample number up to")
     parser.add_argument("--fromTime", type=str, default=None,
-                        help="Time to start from format <year>.<month>.<day>_<hour>:<min><sec>\[<.ms>\]")
+                        help="Time to start from format <year>.<month>.<day>_<hour>:<min>:<sec>.<ms>")
     parser.add_argument("--toTime", type=str, default=None,
-                        help="Time to plot up to, format <year>.<month>.<day>_<hour>:<min><sec>\[<.ms>\]")
+                        help="Time to plot up to, format <year>.<month>.<day>_<hour>:<min>:<sec>.<ms>")
     parser.add_argument("--noSubs", action="store_true",
                         help="If subs should be plotted")
     parser.add_argument("-v", "--verbose", action="count", default=0,
