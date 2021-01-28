@@ -1,11 +1,6 @@
 # Matroska Plotter
 A python module to plot data encoded as audio streams inside a matroska containers.
 
-# The Fully-labeled hIgh-fRequencyElectricity Disaggregation (FIRED) dataset
-
-Python module to load and interact with the FIRED dataset. 
-The files contain scripts to generate several statistics and plots from the data.
-
 ## Installation
 
 Install latest ```ffmpeg``` on your system 
