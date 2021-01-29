@@ -43,18 +43,17 @@ python3 plot.py -h
 ##                         Select the measures to plot. list e.g.: "acc_x,acc_y,acc_z"
 ##   -p {samples,date,seconds}, --plot_type {samples,date,seconds}
 ##                         If it should be displayed with datetime on axis, seconds or samples
-##   --power               If 50 Hz power should be calculated and plotted
 ##   --matplotlib          If it should be displayed using matplotlib
 ##   --smoothing SMOOTHING
 ##                         Smoothness parameter, default=No smooting applied
 ##   -a AGGREGATED, --aggregated AGGREGATED
-##                         Select aggregated stream. This stream will be plotted on top. Default, stream 0 is used.
+##                         Select aggregated stream. This stream will be plotted on top. Default, the first stream is used.
 ##   --fromSample FROMSAMPLE
 ##                         Sample number to start from
 ##   --toSample TOSAMPLE   Sample number up to
 ##   --fromTime FROMTIME   Time to start from format <year>.<month>.<day>_<hour>:<min>:<sec>.<ms>
 ##   --toTime TOTIME       Time to plot up to, format <year>.<month>.<day>_<hour>:<min>:<sec>.<ms>
-##   --noSubs              If subs should be plotted
+##   --noSubs              If subs should be not plotted
 ##   -v, --verbose         Increase output verbosity
 ```
 
