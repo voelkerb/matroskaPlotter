@@ -195,6 +195,7 @@ def plotWithMatplotlib(dataList, measures, verbose=False, show=True, inOneAxis=F
     axisIndex = 0
     tsEnd = 0
     coveredLines = []
+    dataLength = 0
     for dataDict in dataList:
         channelTags = dataDict["measures"]
         # Try to sort channels according to L1, L2, L3
@@ -255,11 +256,14 @@ def plotWithMatplotlib(dataList, measures, verbose=False, show=True, inOneAxis=F
                     timestamps = np.linspace(startTs, startTs + duration, samples)
                     dates = [datetime.datetime.fromtimestamp(ts) for ts in timestamps]
                     t = dates
+                    if (timestamps[-1]-timestamps[0]) > dataLength: dataLength = timestamps[-1]-timestamps[0]
                 elif plotType == "seconds":
                     duration = samples/dataDict["samplingrate"]
                     t = np.linspace(0, duration, len(data))
+                    if (t[-1]-t[0]) > dataLength: dataLength = t[-1]-t[0]
                 elif plotType == "samples":
                     t = np.linspace(0, len(data), len(data)+1)
+                    if (t[-1]-t[0]) > dataLength: dataLength = t[-1]-t[0]
                 else:
                     sys.exit("Unsupported plot type" + str(plotType))
                 
@@ -296,6 +300,7 @@ def plotWithMatplotlib(dataList, measures, verbose=False, show=True, inOneAxis=F
                     if label is not None and unit is not None:
                         txt = str(label) + " in " + str(unit)
                     axis.set_ylabel(txt)
+                    axis.get_yaxis().set_label_coords(-0.06,0.5)
                 counter += 1   
                     
             labs = [l.get_label() for l in lines if l.get_label() not in coveredLines]
@@ -313,10 +318,14 @@ def plotWithMatplotlib(dataList, measures, verbose=False, show=True, inOneAxis=F
             #plt.xticks(rotation=45)    
             if "subs" in dataDict:
                 for i, sub in enumerate(dataDict["subs"]):
-                    if sub.start/1000.0 > tsEnd: break
+                    # if sub.start/1000.0 > tsEnd: break
                     start = sub.start/1000.0 + startTs
                     end = sub.end/1000.0 + startTs
                     middle = start + (end-start)/2
+                    dur = end-start
+                    dontShow = False
+                    if abs(start - startTs) < 0.5: dontShow = True
+
                     if plotType == "date":
                         start = datetime.datetime.fromtimestamp(start)
                         end = datetime.datetime.fromtimestamp(end)
@@ -325,14 +334,17 @@ def plotWithMatplotlib(dataList, measures, verbose=False, show=True, inOneAxis=F
                         start = int(start*dataDict["samplingrate"])
                         end = int(end*dataDict["samplingrate"])
                         middle = int(middle*dataDict["samplingrate"])
-
-                    axes[0].axvline(x=start, linewidth=0.1, color=(0,0,0))
-                    axes[axisIndex].axvline(x=start, linewidth=0.5, color=(0,0,0))
-                    y = axes[axisIndex].get_ylim()[0] + (axes[axisIndex].get_ylim()[1]-axes[axisIndex].get_ylim()[0])/6.5
+                    if not dontShow:
+                        axes[0].axvline(x=start, linewidth=0.1, color=(0,0,0))
+                        axes[axisIndex].axvline(x=start, linewidth=0.5, color=(0,0,0))
+                    #y = axes[axisIndex].get_ylim()[0] + (axes[axisIndex].get_ylim()[1]-axes[axisIndex].get_ylim()[0])/6.5
+                    y = (axes[axisIndex].get_ylim()[1] - axes[axisIndex].get_ylim()[0])/2
                     # if i%2 == 0: y += axes[axisIndex].get_ylim()[0] + (axes[axisIndex].get_ylim()[1]-axes[axisIndex].get_ylim()[0])/3
                     text = sub.text.replace("\\N", "\n")
                     text = text.replace(" (", "\n(")
-                    axes[axisIndex].text(middle, y, text, rotation=90, fontsize=9, horizontalalignment='center', verticalalignment='bottom')
+                    rotation = 90
+                    if dur > dataLength/10: rotation=0
+                    axes[axisIndex].text(middle, y, text, rotation=rotation, fontsize=8, horizontalalignment='center', verticalalignment='center')
             if not inOneAxis: 
                 axisIndex += 1
                 newAxis = True
@@ -465,7 +477,7 @@ def plotWithPyqtgraph(dataList, measures, verbose=False, show=True, plotType="sa
             elif tsstart is not None: ts = float(tsstart)
         if "subs" in dataDict:
             for i, sub in enumerate(dataDict["subs"]):
-                if sub.start/1000.0 > tsEnd: break
+                # if sub.start/1000.0 > tsEnd: break
                 start = ts + sub.start/1000.0
                 end = ts + sub.end/1000.0
                 pos = start + (end-start)/2
@@ -533,7 +545,12 @@ def initParser():
                         dest='titleList',     # store in 'list'.
                         default=[],
                         action='append',
-                        help="Add a title to plot. Use multiple -t to add more titles. e.g -t powermeter01 -t powermeter02")
+                        help="Add a stream to plot. Use multiple -t to add more titles. e.g -t powermeter01 -t powermeter02")
+    parser.add_argument("-n", "--names", type=str, 
+                        dest='nameList',     # store in 'list'.
+                        default=[],
+                        action='append',
+                        help="Give each stream a name. use multiple -n to add more names. e.g -n frigde -n 'espressp machine' ")
     parser.add_argument("-m", "--measures", type=str, default="v,i,p,q,s,v_l1,v_l2,v_l3,i_l1,i_l2,i_l3,p_l1,p_l2,p_l3,s_l1,s_l2,s_l3,q_l1,q_l2,q_l3,C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15",
                         help="Select the measures to plot. list e.g.: \"v_l1,v_l2,i_l1,i_l2,p_l1,q_l1,C0,C1,C2,C3,C4,C5,C6,C7,C8\"")
     parser.add_argument("-p", "--plot_type", default="samples", choices=["samples", "date", "seconds"],
@@ -575,20 +592,21 @@ if __name__ == '__main__':
     if args.streams != "-1":
         streamsToLoad = args.streams.split(",")
         streamsToLoad = [int(stream) for stream in streamsToLoad]
-    if len(args.titleList) > 0:
-        myInfo = mkv.info(args.filePath.name)
-        titles = [stream["title"] for stream in myInfo["streams"]]
-        if streamsToLoad is None: streamsToLoad = []
-        streamsToLoad.extend([titles.index(title) for title in args.titleList if title in titles])
-        for title in args.titleList:
-            if title not in titles:
-                printError("Stream with title \"{}\" not found".format(title))
-
-        print(args.titleList)
+    
 
     audio = []
     remainingSubs = []
     for filePath in args.filePaths:
+        if len(args.titleList) > 0:
+            myInfo = mkv.info(filePath.name)
+            titles = [stream["title"] for stream in myInfo["streams"]]
+            if streamsToLoad is None: streamsToLoad = []
+            streamsToLoad.extend([titles.index(title) for title in args.titleList if title in titles])
+            for title in args.titleList:
+                if title not in titles:
+                    printError("Stream with title \"{}\" not found".format(title))
+            print(args.titleList)
+
         if args.verbose:
             print(mkv.info(filePath.name))
             print("Loading mkv.. ", end="", flush=True)
@@ -606,10 +624,13 @@ if __name__ == '__main__':
         # Sort subtitles and audio s.t. audio starts with all streams without subtitles
         # Subtitle array will be of same length as audio array with nones for audio streams without subtitles
         dataAudio, dataSub = mkv.mapSubsToAudio(dataList, fallBackMapping=True)
-        for a in dataAudio: a["filename"] = filePath
+        for a in dataAudio: 
+            a["filename"] = filePath
+
         audio.extend(dataAudio)
         remainingSubs.extend(dataSub)
 
+    for a,n in zip(audio, args.nameList): a["title"] = n
 
     if len(remainingSubs) > 0: printBlue("Used fallback mapping: Subtitle mapping might not be correct!")
     subFigs = len(audio)
@@ -620,12 +641,17 @@ if __name__ == '__main__':
 
     
     if args.toTime is not None:
+        oldTs = a["timestamp"]
         timestop = decodeDateStr(args.toTime, "%Y.%m.%d_%H:%M:%S.%f").timestamp()
         for audio_ in audio:
             if "timestamp" not in audio_:
                 audio_["timestamp"] = datetime.datetime.timestamp(date) # +2*60*60
             samplestop = int((timestop - audio_["timestamp"])*audio_["samplingrate"])
             audio_["data"] = audio_["data"][:samplestop]
+            if "subs" in audio_:
+                audio_["subs"] = [s for s in audio_["subs"] if (oldTs + s.start/1000.0) < timestop]
+                for s in audio_["subs"]:
+                    if (oldTs + s.end/1000.0) >= timestop: s.end = (timestop-oldTs)*1000.0
 
     def timestampFromFileName(fn):
         date = None
@@ -637,27 +663,56 @@ if __name__ == '__main__':
 
     if args.fromTime is not None:
         timestart = decodeDateStr(args.fromTime, "%Y.%m.%d_%H:%M:%S.%f").timestamp()
+
         for a in audio:
+            oldTs = float(a["timestamp"])
             if "timestamp" not in a: a["timestamp"] = timestampFromFileName(a["filename"])
             samplestart = int((timestart - a["timestamp"])*a["samplingrate"])
             a["timestamp"] = timestart
             a["data"] = a["data"][samplestart:]
+            if "subs" in a:
+                newSubs = []    
+                for s in a["subs"]:
+                    if (oldTs + s.start/1000.0) < timestart and (oldTs + s.end/1000.0) <= timestart:
+                        continue
+                    elif (oldTs + s.start/1000.0) < timestart and (oldTs + s.end/1000.0) > timestart:
+                        s.start = (timestart-oldTs)*1000.0
+                    s.start -= max(0, (timestart-oldTs)*1000.0)
+                    s.end -= max((timestart-oldTs)*1000.0,0)
+                    newSubs.append(s)
+                a["subs"] = newSubs
         
     
 
     if args.toSample is not None:
-        # toSample = int(numexpr.evaluate(args.toSample))
         toSample = int(args.toSample)
         if toSample is not None:
             for a in audio:
+                oldTs = a["timestamp"]
+                timestop = oldTs + toSample/a["samplingrate"]
                 a["data"] = a["data"][:toSample]
+                if "subs" in a:
+                    a["subs"] = [s for s in a["subs"] if (oldTs + s.start/1000.0) < timestop]
+                    for s in a["subs"]:
+                        if (oldTs + s.end/1000.0) >= timestop: s.end = (timestop-oldTs)*1000.0
+
     if args.fromSample is not None:
-        # fromSample = int(numexpr.evaluate(args.fromSample))
         fromSample = int(args.fromSample)
         if fromSample is not None:
             for a in audio:
+                oldTs = a["timestamp"]
+                timestart = oldTs + fromSample/a["samplingrate"]
                 a["data"] = a["data"][fromSample:]
-
+                newSubs = []    
+                for s in a["subs"]:
+                    if (oldTs + s.start/1000.0) < timestart and (oldTs + s.end/1000.0) <= timestart:
+                        continue
+                    elif (oldTs + s.start/1000.0) < timestart and (oldTs + s.end/1000.0) > timestart:
+                        s.start = (timestart-oldTs)*1000.0
+                    s.start -= max(0, (timestart-oldTs)*1000.0)
+                    s.end -= max((timestart-oldTs)*1000.0,0)
+                    newSubs.append(s)
+                a["subs"] = newSubs
 
     for a in audio:
         a["measures"] = list(set(a["measures"]).intersection(measures))

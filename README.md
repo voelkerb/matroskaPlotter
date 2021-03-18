@@ -62,8 +62,8 @@ python3 plot.py -h
 ##   --fromSample FROMSAMPLE
 ##                         Sample number to start from
 ##   --toSample TOSAMPLE   Sample number up to
-##   --fromTime FROMTIME   Time to start from format <year>.<month>.<day>_<hour>:<min>:<sec>.<ms>
-##   --toTime TOTIME       Time to plot up to, format <year>.<month>.<day>_<hour>:<min>:<sec>.<ms>
+##   --fromTime FROMTIME   Time to start from format "<year>.<month>.<day>_<hour>:<min>:<sec>.<ms>"
+##   --toTime TOTIME       Time to plot up to, format "<year>.<month>.<day>_<hour>:<min>:<sec>.<ms>"
 ##   --noSubs              If subs should be plotted
 ##   -v, --verbose         Increase output verbosity
 ```
