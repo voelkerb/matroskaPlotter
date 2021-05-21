@@ -3,7 +3,6 @@ import sys
 import os
 import numpy as np
 import av
-import av.io
 from pysubs2 import SSAFile, SSAEvent
 
 import time
