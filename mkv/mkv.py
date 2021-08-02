@@ -3,12 +3,14 @@ import sys
 import os
 import numpy as np
 import av
+import math
 from typing import Union, List, Tuple, Optional
 from pysubs2 import SSAFile, SSAEvent
 
 import time
 from .terminal import printBlue, printError, printWarning, printCriticalError
 
+VERBOSE = False
 # TODO: All LOAD-Functions crash with Seg Fault when containing more than 7 Streams
 # Has been nailed down to "to_ndarray" array function or "av.io.read"
 
@@ -1107,7 +1109,7 @@ def info(path, format=None, option=[]):
                 streamInfo["duration"] = samples[i]/streamInfo["samplingrate"]
             else:
                 streamInfo["duration"] = 0
-                streamInfo["samples"] = int(streamInfo["duration"]*sπreamInfo["samplingrate"])
+                streamInfo["samples"] = int(streamInfo["duration"]*streamInfo["samplingrate"])
         # Audio has number of channels
         if stream.type == 'audio':
             streamInfo["#channels"] = stream.channels 
