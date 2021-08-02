@@ -3,7 +3,7 @@ import sys
 import os
 import numpy as np
 import av
-import av.io
+from typing import Union, List, Tuple, Optional
 from pysubs2 import SSAFile, SSAEvent
 
 import time
@@ -169,7 +169,7 @@ def seekLoad(filepath, seekPos, length, verbose=False, streamsToLoad=None, title
     # RETURN it as a list
     return [dataDict[i] for i in dataDict.keys()]
 
-def loadAudio(filepath, verbose=False, streamsToLoad=None, titles=None):
+def loadAudio(filepath: str, streamsToLoad: Optional[List[int]]=None, titles: Optional[List[str]]=None, start: Optional[float]=0, duration: Optional[float]=-1) -> List[dict]:
     r"""
     Call to load audio from an MKV file to an numpy array the fast way.
     Note: All streams MUST have the same samplingrate!
@@ -189,15 +189,18 @@ def loadAudio(filepath, verbose=False, streamsToLoad=None, titles=None):
                 samplingrate: < samplingrate >,                       # only for audio
                 measures:     < list of measures >,                   # only for audio
                 data:         < data as recarray with fieldnames >,   # only for audio
-                subs:         < subtitles as pysubs2 file >,          # only for subtitles
             },
             ...
         ]
 
     :param filepath:       filepath to the mkv to open
     :type  filepath:       str
-    :param verbose:        increase output verbosity
-    :type  verbose:        Bool
+    :param start:          start time in the file (seconds from file start)
+                           default: 0
+    :type  start:          float
+    :param duration:       Duration to load data (from start)
+                           default: -1 (all data)
+    :type  duration:       float
     :param streamsToLoad:  List of streams to load from the file, either list of numbers or list of stream titles
                            default: None -> all streams should be loaded
     :type  streamsToLoad:  list
@@ -220,23 +223,99 @@ def loadAudio(filepath, verbose=False, streamsToLoad=None, titles=None):
     if len(streams) == 0: return []
     # Copy over stream infos into datalist
     dataDict = {i["streamIndex"]:i for i in info(filepath)["streams"] if i["streamIndex"] in [s.index for s in streams]}
-    # Verbose print
-    if verbose:
+    # VERBOSE print
+    if VERBOSE:
         for key, stream in dataDict.items():
-            printBlue("Stream : " + str(stream["streamIndex"]))
+            print("Stream : " + str(stream["streamIndex"]))
             for k in ["type", "title", "metadata", "samplingrate", "measures", "duration"]:
                 if k in stream: print("{}: {}".format(k, stream[k]))
     indices = [stream.index for stream in streams]
-    # load only the data we want
-    fn = lambda bc: [stream for stream in bc if stream.index in indices]
-    rawdata = av.io.read(fn, file=filepath)
-    # Store data as recarray in dict
-    for data in rawdata:
-        # Get index
-        i = data.info.index
-        # Audio data will be stored here
-        dataDict[i]["data"] = np.core.records.fromarrays(data.transpose(), dtype={'names': dataDict[i]["measures"], 'formats': ['f4']*len(dataDict[i]["measures"])})
+    # Prepare dict for data
+    for i in dataDict.keys():
+        # Allocate empty array
+        dur = dataDict[i]["samples"]/dataDict[i]["samplingrate"]-start
+        if duration >= 0: dur = min(dur, duration)
+        samples = max(0, int(math.ceil(dur*float(dataDict[i]["samplingrate"]))))
+        dataDict[i]["samples"] = samples
+        dataDict[i]["duration"] = dur
+        dataDict[i]["timestamp"] = dataDict[i]["timestamp"]+start
+        dataDict[i]["data"] = np.ones((dataDict[i]["samples"],len(dataDict[i]["measures"])), dtype=np.float32)
+        # dataDict[i]["data"] = np.empty((dataDict[i]["samples"],len(dataDict[i]["measures"])), dtype=np.float32)
+        dataDict[i]["storeIndex"] = 0 
+    
+    start_pts = start*1000.0
+    end_pts = start_pts + duration*1000
+    inited = False
 
+    for stream in streams:
+        index = stream.index
+        if VERBOSE: print(stream)
+        container = av.open(filepath)
+        container.seek(math.floor(start_pts), whence='time', any_frame=False, stream=stream)
+        initCheck = False
+        for frame in container.decode(streams=stream.index):
+            # Check seek status
+            if not inited:
+                if frame.pts > start_pts: raise AssertionError("Seeked too far, should not happen: {}ms - {}ms".format(frame.pts, start_pts))
+            # Check start 
+            if frame.pts + int(frame.samples/float(frame.sample_rate)*1000) < start_pts: continue
+            # Check end
+            if duration != -1 and frame.pts > end_pts: break
+        
+            # If we need to skip data at the beginning, 0 else
+            # This is only ms resolution
+            # NOTE: Does this cause problems for us?? we need to find out
+            s = max(0, math.floor(float(start_pts-float(frame.pts))/1000.0*frame.sample_rate))
+            # so use samplecount
+            #s = max(0, int(frame.samples - (dataDict[index]["samples"] - dataDict[index]["storeIndex"])))
+            # If we need to skip data at the end
+            if duration >= 0: e = min(frame.samples, float((end_pts-frame.pts)/1000.0*frame.sample_rate))
+            else: e = frame.samples
+            # If there were rounding issues
+            e = min(e, int(s+dataDict[index]["samples"] - dataDict[index]["storeIndex"]))
+
+            # if not inited:
+            #     print("dur: {}, endPts: {}".format(duration, end_pts, ))
+            #     print("{}:{} - f:{}, sr: {}, pts:{}, start:{}, {}".format(s,e, frame.samples,frame.sample_rate, frame.pts, start_pts, (start_pts-frame.pts)/1000.0*frame.sample_rate))
+            # Get corresponding index in dataList array
+            ndarray = frame.to_ndarray().transpose()[int(s):int(e),:]
+            # copy over data
+            j = dataDict[index]["storeIndex"]
+            dataDict[index]["data"][j:j+ndarray.shape[0],:] = ndarray[:,:]
+            dataDict[index]["storeIndex"] += ndarray.shape[0]
+            if not inited:
+                inited = True
+   
+    # Demultiplex the individual packets of the file
+    # for i, packet in enumerate(container.demux(streams)):
+        
+    #     # Inside the packets, decode the frames
+    #     for frame in packet.decode(): # codec_ctx.decode(packet):
+
+    #         # TODO:
+    #         if not inited:
+    #             inited = True
+    #             if frame.pts > start_pts: raise AssertionError("Seeked too far, should not happen: {}ms - {}ms".format(frame.pts, start_pts))
+    #             # Look if we can seek to next frame
+    #         if frame.pts + int(frame.samples/float(frame.sample_rate)*1000) < start*1000: continue
+    #         if stop != -1 and frame.pts > stop*1000: break
+    #         # If we need to skip data at the beginning, 0 else
+    #         s = max(0, int((start*1000-frame.pts)/1000.0*frame.sample_rate))
+    #         # If we need to skip data at the end
+    #         if stop != -1: e = min(frame.samples, int((stop*1000-frame.pts)/1000.0*frame.sample_rate))
+    #         else: e = frame.samples
+
+    #         # Get corresponding index in dataList array
+    #         index = packet.stream.index
+    #         ndarray = frame.to_ndarray().transpose()
+    #         # copy over data
+    #         j = dataDict[index]["storeIndex"]
+    #         dataDict[index]["data"][j:j+ndarray.shape[0],:] = ndarray[:,:]
+    #         dataDict[index]["storeIndex"] += ndarray.shape[0]
+    # Make recarray from data
+    for i in dataDict.keys():
+        if "storeIndex" in dataDict[i]: del dataDict[i]["storeIndex"] 
+        dataDict[i]["data"] = np.core.records.fromarrays(dataDict[i]["data"].transpose(), dtype={'names': dataDict[i]["measures"], 'formats': ['f4']*len(dataDict[i]["measures"])})
     # RETURN it as a list
     return [dataDict[i] for i in dataDict.keys()]
 
