@@ -611,8 +611,8 @@ if __name__ == '__main__':
             print(mkv.info(filePath.name))
             print("Loading mkv.. ", end="", flush=True)
         # Load auido and subs separat, this is way faster
-        # dataList = mkv.load(args.filePath.name, streamsToLoad=streamsToLoad, verbose=args.verbose >= 2)
-        dataList = mkv.loadAudio(filePath.name, streamsToLoad=streamsToLoad, verbose=args.verbose >= 2)
+        # dataList = mkv.load(args.filePath.name, streamsToLoad=streamsToLoad)
+        dataList = mkv.loadAudio(filePath.name, streamsToLoad=streamsToLoad)
         if not args.noSubs:
             dataList.extend(mkv.load(filePath.name, streamsToLoad=streamsToLoad, subs=True, audio=False, video=False, verbose=args.verbose >= 2))
         if args.verbose and len(dataList) > 0:
