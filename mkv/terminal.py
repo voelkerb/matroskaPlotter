@@ -85,66 +85,66 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-import keyboard, string as t
-#: Maximum allowed charactes as input
-MAX_ALLOWED = t.ascii_letters+"1234567890!@#$%^&*()-=_+{}[]|\:;',<>./?`~"+'"'
-def readInput(text="", cancel="esc", allowed=MAX_ALLOWED):
-    """
-    Function to read standard-in input. Press enter to finish.
-    If you are on Darwin systems, you require root access for this to work.
+# import keyboard, string as t # not compatible to arm64 by now
+# #: Maximum allowed charactes as input
+# MAX_ALLOWED = t.ascii_letters+"1234567890!@#$%^&*()-=_+{}[]|\:;',<>./?`~"+'"'
+# def readInput(text="", cancel="esc", allowed=MAX_ALLOWED):
+#     """
+#     Function to read standard-in input. Press enter to finish.
+#     If you are on Darwin systems, you require root access for this to work.
 
-    :param text:    Text to display as input prompt
-    :type  text:    str, default: ""
-    :param cancel:  Key to escape input promt
-    :type  cancel:  str, default: "esc"
-    :param allowed: Allowed input character as a string
-    :type  allowed: str, default: :attr:`MAX_ALLOWED<terminal.terminal.MAX_ALLOWED>`
+#     :param text:    Text to display as input prompt
+#     :type  text:    str, default: ""
+#     :param cancel:  Key to escape input promt
+#     :type  cancel:  str, default: "esc"
+#     :param allowed: Allowed input character as a string
+#     :type  allowed: str, default: :attr:`MAX_ALLOWED<terminal.terminal.MAX_ALLOWED>`
 
-    :return: Completed input string, None on esc pressed
-    :rtype:  str or None
-    """
-    print(text,end="")
-    output = []
-    output2 = []
-    while True:
-        key = keyboard.read_event()
-        k = key.name
-        if key.event_type == "up": 
-            continue
-        if k == cancel:
-            print("")
-            return None
-        elif k == "enter": 
-            break
-        elif k == "end": 
-            output = output+output2
-            output2 = []
-        elif k == "home": 
-            output2 = output+output2
-            output = []
-        elif k == "left":
-            try: 
-                output2.insert(0, output.pop())
-            except: 
-                pass
-        elif k == "right":
-            try: 
-                output.append(output2.pop(0))
-            except: 
-                pass
-        elif k == "space": 
-            k = " "
-            output.append(k)
-        elif k == "backspace": 
-            output = output[:-1]
-        elif k in allowed: 
-            output.append(k)
-    foutput2 = ""
-    for put in output:
-        foutput2 += str(put)
-    for put in output2:
-        foutput2 += str(put)
-    for i in range(0, len(foutput2)+2): 
-        keyboard.press_and_release("backspace")
-    print(foutput2)
-    return foutput2
+#     :return: Completed input string, None on esc pressed
+#     :rtype:  str or None
+#     """
+#     print(text,end="")
+#     output = []
+#     output2 = []
+#     while True:
+#         key = keyboard.read_event()
+#         k = key.name
+#         if key.event_type == "up": 
+#             continue
+#         if k == cancel:
+#             print("")
+#             return None
+#         elif k == "enter": 
+#             break
+#         elif k == "end": 
+#             output = output+output2
+#             output2 = []
+#         elif k == "home": 
+#             output2 = output+output2
+#             output = []
+#         elif k == "left":
+#             try: 
+#                 output2.insert(0, output.pop())
+#             except: 
+#                 pass
+#         elif k == "right":
+#             try: 
+#                 output.append(output2.pop(0))
+#             except: 
+#                 pass
+#         elif k == "space": 
+#             k = " "
+#             output.append(k)
+#         elif k == "backspace": 
+#             output = output[:-1]
+#         elif k in allowed: 
+#             output.append(k)
+#     foutput2 = ""
+#     for put in output:
+#         foutput2 += str(put)
+#     for put in output2:
+#         foutput2 += str(put)
+#     for i in range(0, len(foutput2)+2): 
+#         keyboard.press_and_release("backspace")
+#     print(foutput2)
+#     return foutput2

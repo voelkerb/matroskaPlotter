@@ -258,7 +258,9 @@ def loadAudio(filepath: str, streamsToLoad: Optional[List[int]]=None, titles: Op
         for frame in container.decode(streams=stream.index):
             # Check seek status
             if not inited:
-                if frame.pts > start_pts: raise AssertionError("Seeked too far, should not happen: {}ms - {}ms".format(frame.pts, start_pts))
+                if frame.pts > start_pts: 
+                    raise AssertionError("Seeked too far, should not happen: {}ms - {}ms".format(frame.pts, start_pts))
+                    pass
             # Check start 
             if frame.pts + int(frame.samples/float(frame.sample_rate)*1000) < start_pts: continue
             # Check end
@@ -1129,6 +1131,7 @@ def info(path, format=None, option=[]):
         if len(key) > 0: title = stream.metadata[next(iter(key))]
         else: title = "Stream " + str(stream.index)
         streamInfo["title"] = title
+        streamInfo["timestamp"] = 0
         # Extract timestamp if there is any
         for key in ["TIMESTAMP", "Timestamp", "timestamp"]:
             if key in stream.metadata:

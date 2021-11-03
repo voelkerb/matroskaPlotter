@@ -27,6 +27,8 @@ import matplotlib.ticker as ticker
 
 # Some predefined colors for specific measures
 colors = {}
+colors["v"] = (1,0,0,0.5)
+colors["i"] = (0,0,1)
 colors["p"] = (1,0,0)
 colors["q"] = (0,0,1)
 colors["s"] = (0,1,0)
@@ -105,6 +107,15 @@ def initPyqtgraph():
     win.resize(1000,600)
     return win
 
+labels = {
+        "V":{"label":"Voltage","legend":"Voltage","unit":"V"}, 
+        "I":{"label":"Current","legend":"Current","unit":"mA"},
+        "P":{"label":"Power","legend":"Active Power","unit":"W"},
+        "Q":{"label":"Power","legend":"Reactive Power","unit":"var"},
+        "S":{"label":"Power","legend":"Apparent Power","unit":"VA"},
+        "ACC":{"label":"acceleration","legend":"acc_","unit":"g"},
+        "GYRO":{"label":"rotation rate","legend":"gyro_","unit":"m/s"},
+    }
 def getNamesForWhat(what):
     # Try to find a label for the channel
     label = str(what)
@@ -112,24 +123,19 @@ def getNamesForWhat(what):
     legend = label
 
     nwhat = what.split("_")[0].upper()
-    if nwhat == "P":
-        legend = "active power"
-    elif nwhat == "Q":
-        legend = "reactive power"
-    elif nwhat == "S":
-        legend = "apparent power"
+    if nwhat in labels:
+        legend = labels[nwhat]["legend"]
+        unit = labels[nwhat]["unit"]
+        label = labels[nwhat]["label"]
+    
+    # Typically multiple are plotted, so go more general
     if nwhat in ["P","Q","S"]:
         label = "Power"
         unit = "W/var/VA"
-    
-    if "acc" in what:
-        legend = "acceleration " + what
-        unit = "g"
-        label = "acceleration"
-    elif "gyro" in what:
-        legend = "rotation rate " + what
-        unit = "m/s"
-        label = "rotation rate"
+
+    if any(x in what.lower() for x in ["acc", "gyro"]):
+        legend = what
+
     # Construct label and unit
     # NOTE: To be implemented by user
     return legend, label, unit
@@ -251,7 +257,8 @@ def plotWithMatplotlib(dataList, measures, verbose=False, show=True, inOneAxis=F
                 convertToDate = False
                 if plotType == "date":
                     convertToDate = True
-                    startTs = dataDict["timestamp"]
+                    if "timestamp" in dataDict:
+                        startTs = dataDict["timestamp"]
                     duration = samples/dataDict["samplingrate"]
                     timestamps = np.linspace(startTs, startTs + duration, samples)
                     dates = [datetime.datetime.fromtimestamp(ts) for ts in timestamps]
@@ -300,7 +307,7 @@ def plotWithMatplotlib(dataList, measures, verbose=False, show=True, inOneAxis=F
                     if label is not None and unit is not None:
                         txt = str(label) + " in " + str(unit)
                     axis.set_ylabel(txt)
-                    axis.get_yaxis().set_label_coords(-0.06,0.5)
+                    # axis.get_yaxis().set_label_coords(-0.06,0.5)
                 counter += 1   
                     
             labs = [l.get_label() for l in lines if l.get_label() not in coveredLines]
@@ -443,7 +450,9 @@ def plotWithPyqtgraph(dataList, measures, verbose=False, show=True, plotType="sa
                     if label is not None: myPlt.setLabel('left', label, units=unit)
                 lastUnit = unit
                 if plotType == "date": 
-                    if tsstart is None: tsstart = dataDict["timestamp"]
+                    if tsstart is None:
+                        if "timestamp" in dataDict: tsstart = dataDict["timestamp"]
+                        else: tsstart = 0
 
                 # make curve
                 # Get known color, else use random one
@@ -579,6 +588,7 @@ def initParser():
 # _______________Can be called as main__________________
 if __name__ == '__main__':
     import argparse
+    print("Hello from KKV plot")
     parser = initParser()
     args = parser.parse_args()
 
