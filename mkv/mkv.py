@@ -259,7 +259,10 @@ def loadAudio(filepath: str, streamsToLoad: Optional[List[int]]=None, titles: Op
             # Check seek status
             if not inited:
                 if frame.pts > start_pts: 
-                    raise AssertionError("Seeked too far, should not happen: {}ms - {}ms".format(frame.pts, start_pts))
+                    print("Seeked too far, should not happen: {}ms - {}ms".format(frame.pts, start_pts))
+                    start_pts = frame.pts
+                    end_pts = start_pts + duration*1000
+                    # we need to append some nones to the data
                     pass
             # Check start 
             if frame.pts + int(frame.samples/float(frame.sample_rate)*1000) < start_pts: continue
@@ -283,10 +286,12 @@ def loadAudio(filepath: str, streamsToLoad: Optional[List[int]]=None, titles: Op
             #     print("{}:{} - f:{}, sr: {}, pts:{}, start:{}, {}".format(s,e, frame.samples,frame.sample_rate, frame.pts, start_pts, (start_pts-frame.pts)/1000.0*frame.sample_rate))
             # Get corresponding index in dataList array
             ndarray = frame.to_ndarray().transpose()[int(s):int(e),:]
+            # print("{} -> {}, startPTS {} endPTS{} frame.pts{} frame.samples{} frame.sr{}".format(e, s, start_pts, end_pts, frame.pts, frame.samples, frame.sample_rate))
             # copy over data
             j = dataDict[index]["storeIndex"]
             dataDict[index]["data"][j:j+ndarray.shape[0],:] = ndarray[:,:]
             dataDict[index]["storeIndex"] += ndarray.shape[0]
+            
             if not inited:
                 inited = True
    
@@ -1109,6 +1114,8 @@ def info(path, format=None, option=[]):
             if samples is not None:
                 streamInfo["samples"] = samples[i]
                 streamInfo["duration"] = samples[i]/streamInfo["samplingrate"]
+                print(samples[i])
+                print(stream.sample_rate)
             else:
                 streamInfo["duration"] = 0
                 streamInfo["samples"] = int(streamInfo["duration"]*streamInfo["samplingrate"])

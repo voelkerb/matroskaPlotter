@@ -501,7 +501,7 @@ def plotWithPyqtgraph(dataList, measures, verbose=False, show=True, plotType="sa
                 vLine.setPos(start)
                 mainxPlot.addItem(text)
                 mainxPlot.addItem(vLine)
-        
+    
     #  Since all axis are linke, show x axis only on last plot
     # Set range to full at beginning
     if plt is not None:
@@ -728,6 +728,8 @@ if __name__ == '__main__':
         a["measures"] = list(set(a["measures"]).intersection(measures))
         a["data"] = a["data"][a["measures"]]
 
+        if args.verbose:
+            print(a["data"][:10])
     allMeasures = measures
     
     if args.smoothing is not None:
