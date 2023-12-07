@@ -135,7 +135,7 @@ def decodeDateString(s):
     :rtype: datetime or None
     """
     # other formats are not supported
-    formats = ["%Y_%m_%d", "%Y_%m_%d__%H_%M_%S", "%Y_%m_%d__%H_%M_%S.%f"]
+    formats = ["%Y_%m_%d", "%Y_%m_%d__%H_%M_%S", "%Y_%m_%d__%H_%M_%S.%f", "%Y_%m_%d__%H_%M_%S_%f"]
     for format in formats:
         date = decodeDateStr(s, format)
         if date is not None: return date
