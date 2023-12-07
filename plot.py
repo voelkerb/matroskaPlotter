@@ -16,6 +16,7 @@ from mkv import mkv
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.dates as md
+import io
 
 import matplotlib
 # This is for tex plots according to acm format
@@ -38,6 +39,8 @@ colors["acc_z"] = (0,1,0)
 colors["gyro_x"] = (1,0,0)
 colors["gyro_y"] = (0,0,1)
 colors["gyro_z"] = (0,1,0)
+colors["P"] = (0,0,1)
+colors["T"] = (1,0,0)
 
 class PrecisionDateFormatter(ticker.Formatter):
     """
@@ -175,7 +178,7 @@ def addPyqtgraphCurve(index, plt, data, what, samplingrate, plottime):
     # Set range to full at beginning
     plt.setXRange(0, curve.max)
 
-def plotWithMatplotlib(dataList, measures, verbose=False, show=True, inOneAxis=False, plotType="samples", channelSplitter="_l"):
+def plotWithMatplotlib(dataList, measures, verbose=False, show=True, inOneAxis=False, plotType="samples", channelSplitter="_l", info=None):
 
     # If l1 l2 l3 in data, we need some more figures, calculate how much...
     subFigs = 0
@@ -284,6 +287,12 @@ def plotWithMatplotlib(dataList, measures, verbose=False, show=True, inOneAxis=F
                     label = label
                     legend = ttitle
                     color = getArbitraryColor(counter)
+                    
+                if info is not None: 
+                    minf = info.get(what, {})
+                    color = minf.get("color", color)
+                    legend = minf.get("name", legend)
+
                 if np.isnan(data).any():
                     if t is not None:
                         line = axis.plot(t[::skip], data[::skip], color=color, label=legend, marker='x')
@@ -375,7 +384,7 @@ def updateViews():
         rightAxisPlot.setGeometry(leftAxisPlot.getViewBox().sceneBoundingRect())
         rightAxisPlot.linkedViewChanged(leftAxisPlot.getViewBox(), rightAxisPlot.XAxis)
 
-def plotWithPyqtgraph(dataList, measures, verbose=False, show=True, plotType="samples"):
+def plotWithPyqtgraph(dataList, measures, verbose=False, show=True, plotType="samples", info=None):
     win1 = initPyqtgraph()
     win = pg.GraphicsLayout()    
     win.layout.setSpacing(0.)                                              
@@ -390,7 +399,6 @@ def plotWithPyqtgraph(dataList, measures, verbose=False, show=True, plotType="sa
     tsstart = None
     tsstop = None
     plotNumber = 0
-    
     tsEnd = 0
     for dataDict in dataList:
         channelTags = dataDict["measures"]
@@ -435,10 +443,17 @@ def plotWithPyqtgraph(dataList, measures, verbose=False, show=True, plotType="sa
                 myPlt = plt
                 # Check if it is a measure to plot
                 if what not in measures: continue
-
                 color = getColorP(index, what)
                 # Try to find a label for the channel
                 legend, label, unit = getNamesForWhat(what)
+
+                if info is not None: 
+                    minf = info.get(what, {})
+                    if minf is None: minf = {}
+                    color = minf.get("color", color)
+                    legend = minf.get("name", legend)
+                    label = minf.get("name", label)
+
                 # power can be plotted in a single plot
                 if inited and unit is not None and unit != lastUnit:
                     myPlt = pg.ViewBox()
@@ -506,7 +521,7 @@ def plotWithPyqtgraph(dataList, measures, verbose=False, show=True, plotType="sa
     # Set range to full at beginning
     if plt is not None:
         if plotType == "date": 
-            ts = 0
+            ts = tsstart
             if tsstart is None: ts = dataDict["timestamp"]
             if tsstop is None: tsstop = ts + len(dataDict["data"])/dataDict["samplingrate"]
             axis = DateAxisItem(orientation='bottom')
@@ -549,7 +564,7 @@ def initParser():
     parser.add_argument("-subs", '--subtitlePaths', type=argparse.FileType('r'), nargs='+',
                         help="Path(s) to srt subtitles")
     parser.add_argument("-s", "--streams", type=str, default="-1",
-                        help="Select the streams to plot, default=-1 : all streams. e.g. : \"1,2,3\"")
+                        help="Select the streams to plot, default=-1 : all streams. e.g. : \"1;2;3\"")
     parser.add_argument("-t", "--title", type=str, 
                         dest='titleList',     # store in 'list'.
                         default=[],
@@ -559,9 +574,9 @@ def initParser():
                         dest='nameList',     # store in 'list'.
                         default=[],
                         action='append',
-                        help="Give each stream a name. use multiple -n to add more names. e.g -n frigde -n 'espressp machine' ")
-    parser.add_argument("-m", "--measures", type=str, default="v,i,p,q,s,v_l1,v_l2,v_l3,i_l1,i_l2,i_l3,p_l1,p_l2,p_l3,s_l1,s_l2,s_l3,q_l1,q_l2,q_l3,C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15",
-                        help="Select the measures to plot. list e.g.: \"v_l1,v_l2,i_l1,i_l2,p_l1,q_l1,C0,C1,C2,C3,C4,C5,C6,C7,C8\"")
+                        help="Give each stream a name. use multiple -n to add more names. e.g -n frigde -n 'espresso machine' ")
+    parser.add_argument("-m", "--measures", type=str, default="v;i;p;q;s;v_l1;v_l2;v_l3;i_l1;i_l2;i_l3;p_l1;p_l2;p_l3;s_l1;s_l2;s_l3;q_l1;q_l2;q_l3;C0;C1;C2;C3;C4;C5;C6;C7;C8;C9;C10;C11;C12;C13;C14;C15",
+                        help="Select the measures to plot. list e.g.: \"v_l1;v_l2;i_l1;i_l2;p_l1;q_l1;C0;C1;C2;C3;C4;C5;C6;C7;C8\"")
     parser.add_argument("-p", "--plot_type", default="samples", choices=["samples", "date", "seconds"],
                         dest='plotType',     # store in 'list'.
                         help="If it should be displayed with datetime on axis, seconds or samples")
@@ -594,13 +609,15 @@ if __name__ == '__main__':
 
     # The measures to plot
     # Convert from ',' separated string to a python list here
-    measures = args.measures.split(',')
-    measures = [measure.lstrip(" ") for measure in measures]
+    raw_measures = [m for m in args.measures.split(';')]
+    measures = [m.split("{")[0].replace(" ","") for m in raw_measures]
+    m_infos = {mea:eval("{"+m.split("{")[1]) if len(m.split("{")) > 1 else None for mea,m in zip(measures,raw_measures)}
 
-
+    if args.verbose > 1:
+        print("m_infos", m_infos)
     streamsToLoad = None
     if args.streams != "-1":
-        streamsToLoad = args.streams.split(",")
+        streamsToLoad = args.streams.split(";")
         streamsToLoad = [int(stream) for stream in streamsToLoad]
     
 
@@ -614,8 +631,7 @@ if __name__ == '__main__':
             streamsToLoad.extend([titles.index(title) for title in args.titleList if title in titles])
             for title in args.titleList:
                 if title not in titles:
-                    printError("Stream with title \"{}\" not found".format(title))
-            print(args.titleList)
+                    sys.exit("Error: Stream with title \"{}\" not found".format(title))
 
         if args.verbose:
             print(mkv.info(filePath.name))
@@ -665,11 +681,17 @@ if __name__ == '__main__':
 
     def timestampFromFileName(fn):
         date = None
-        dateStr = "__".join(os.path.basename(fn.rstrip(".mkv")).split("__")[-2:])
+        if isinstance(fn, io.TextIOWrapper): fn = fn.name
+        dateStr = "_".join("__".join(os.path.basename(fn.rstrip(".mkv")).split("__")[-2:]).split("_")[:8])
         date = decodeDateString(dateStr)
+
         if date is None:
             date = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)#.astimezone(pytz.utc)
         return date.timestamp()
+    
+    for i,a in enumerate(audio):
+        if "timestamp" not in a or a["timestamp"] in [None, 0]: 
+            audio[i]["timestamp"] = timestampFromFileName(a["filename"])
 
     if args.fromTime is not None:
         timestart = decodeDateStr(args.fromTime, "%Y.%m.%d_%H:%M:%S.%f").timestamp()
@@ -759,14 +781,13 @@ if __name__ == '__main__':
     if args.plotType == "date":
         # date = datetime.datetime.strptime("/".join(os.path.basename(args.filePath.name).split("_")[0:-1]), '%Y/%m/%d')
         for a in audio:
-            if "timestamp" not in a:
+            if "timestamp" not in a or a["timestamp"] == 0:
                 a["timestamp"] = timestampFromFileName(a["filename"]) # +2*60*60
 
     if args.matplotlib:
-        plotWithMatplotlib(audio, measures, verbose=args.verbose>1, show=True, plotType=args.plotType)
+        plotWithMatplotlib(audio, measures, verbose=args.verbose>1, show=True, plotType=args.plotType, info=m_infos)
     else:
-        win = plotWithPyqtgraph(audio, measures, verbose=args.verbose>1, show=True, plotType=args.plotType)
-
+        win = plotWithPyqtgraph(audio, measures, verbose=args.verbose>1, show=True, plotType=args.plotType, info=m_infos)
 
 
     print("Bye Bye from " + str(os.path.basename(__file__)))
