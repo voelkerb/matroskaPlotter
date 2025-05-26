@@ -139,7 +139,7 @@ def seekLoad(filepath, seekPos, length, verbose=False, streamsToLoad=None, title
         index = stream.index
         if verbose: print(stream)
         container = av.open(filepath)
-        container.seek(start_pts, whence='time', any_frame=False, stream=stream)
+        container.seek(start_pts, any_frame=False, stream=stream)
         initCheck = False
         for frame in container.decode(streams=stream.index):
             # print(frame.sample_rate)
@@ -1168,7 +1168,7 @@ def getSamples(path, format=None, option=[]):
         except av.AVError:
             return 0
         # Seek to the last frame in the container
-        container.seek(sys.maxsize, whence='time', any_frame=False, stream=stream)
+        container.seek(sys.maxsize, any_frame=False, stream=stream)
         for frame in container.decode(streams=stream.index):
             samples[i] = int(frame.pts / 1000.0*frame.rate + frame.samples)
     return samples
